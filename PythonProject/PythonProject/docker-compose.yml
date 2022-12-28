@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+
+  chrome:
+    image: selenium/standalone-chrome
+    ports:
+      - 4444:4444
+    networks:
+      - app-tier
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    networks:
+      - app-tier
+
+  python_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ENVIRONMENT: "local"
+      DB_USER: "root"
+      DB_PASS: "password"
+      USE_SELENIUM: "true"
+      CHROMEDRIVER_REMOTE: "http://chrome:4444/wd/hub"
+      SEED_URL: "https://web.archive.org/web/20200406193325/https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/compliance-actions-and-activities/warning-letters"
+    depends_on:
+      - mongo
+    networks:
+      - app-tier
+    # keep the container up and running, so we can exec into it
+    command:
+      tail -f /dev/null
+    volumes:
+      - ./:/app
+
+networks:
+  app-tier:
+    driver: bridge
